@@ -56,8 +56,14 @@ def adduser():
     # create ldif
     ldif = modlist.addModlist(attrs)
 
-    # add ldif to server
-    l.add_s(new_user_dn, ldif)
+    # print ldif and ask if data is right
+    for i in ldif:
+        print '%s: %s' % (i[0], i[1])
+    confirmation = raw_input('confirm y/n: ')
+
+    if confirmation == 'y':
+        # add ldif to server
+        l.add_s(new_user_dn, ldif)
 
     # disconnect
     l.unbind_s()
