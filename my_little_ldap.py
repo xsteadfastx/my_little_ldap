@@ -63,9 +63,24 @@ def adduser():
     l.unbind_s()
 
 
+def ls():
+    search_scope = ldap.SCOPE_SUBTREE
+    retrieve_attributes = ['cn', 'uid']
+    search_filter = 'uid=*'
+
+    l = ldap.open(LDAP_SERVER)
+    ldap_result_id = l.search(LDAP_BASE, search_scope, search_filter,
+                              retrieve_attributes)
+
+    for i in l.result(ldap_result_id)[1]:
+        print '%s: %s' % (i[1]['uid'][0], i[1]['cn'][0])
+
+
 def main():
     if arguments['adduser']:
         adduser()
+    elif arguments['ls']:
+        ls()
 
 
 if __name__ == '__main__':
