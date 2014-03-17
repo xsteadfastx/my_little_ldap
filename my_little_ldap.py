@@ -2,6 +2,7 @@
 Usage:
     my_little_ldap.py adduser <username> <first_name> <last_name> <email_address> <password>
     my_little_ldap.py passwd <username>
+    my_little_ldap.py rm <username>
     my_little_ldap.py fromgroup (add | del) <group> <user>
     my_little_ldap.py ls
     my_little_ldap.py (-h | --help)
@@ -23,13 +24,31 @@ LDAP_ADMIN = 'cn=admin,dc=ecclesianuernberg,dc=de'
 
 
 def encode_password(password):
+    '''encode password to sha'''
     sha_digest = sha.new(password).digest()
     return '{SHA}' + string.strip(encodestring(sha_digest))
 
 
+def get_full_dn(username):
+    '''get full dn for username'''
+    # define variables
+    search_scope = ldap.SCOPE_SUBTREE
+    retrieve_attributes = ['cn']
+    search_filter = 'uid='+username
+
+    # connection and bind
+    l = ldap.open(LDAP_SERVER)
+
+    # search for full dn
+    ldap_result_id = l.search(LDAP_BASE, search_scope, search_filter,
+                              retrieve_attributes)
+
+    return l.result(ldap_result_id)[1][0][0]
+
+
 def adduser():
     # get passwort from commandline
-    admin_password = getpass()
+    admin_password = getpass('Admin Password: ')
 
     # connection and bind
     l = ldap.open(LDAP_SERVER)
@@ -91,18 +110,11 @@ def passwd():
     # define variables
     admin_password = getpass('Admin Password: ')
     new_password = getpass('New Password for '+arguments['<username>']+': ')
-    search_scope = ldap.SCOPE_SUBTREE
-    retrieve_attributes = ['cn']
-    search_filter = 'uid='+arguments['<username>']
+    full_dn = get_full_dn(arguments['<username>'])
 
     # connection and bind
     l = ldap.open(LDAP_SERVER)
     l.simple_bind_s(LDAP_ADMIN, admin_password)
-
-    # search for full dn
-    ldap_result_id = l.search(LDAP_BASE, search_scope, search_filter,
-                              retrieve_attributes)
-    full_dn = l.result(ldap_result_id)[1][0][0]
 
     # encode password
     password = encode_password(new_password)
@@ -115,6 +127,27 @@ def passwd():
     l.unbind_s()
 
 
+def rm():
+    # define variables
+    admin_password = getpass('Admin Password: ')
+    full_dn = get_full_dn(arguments['<username>'])
+
+    #connection and bind
+    l = ldap.open(LDAP_SERVER)
+    l.simple_bind_s(LDAP_ADMIN, admin_password)
+
+    # confirmation
+    print 'you are going to delete user: %s' % (arguments['<username>'])
+    confirmation = raw_input('confirm y/n: ')
+
+    if confirmation == 'y':
+        # delete
+        l.delete_s(full_dn)
+
+    # disconnect
+    l.unbind_s()
+
+
 def main():
     if arguments['adduser']:
         adduser()
@@ -122,6 +155,8 @@ def main():
         ls()
     elif arguments['passwd']:
         passwd()
+    elif arguments['rm']:
+        rm()
 
 
 if __name__ == '__main__':
