@@ -6,6 +6,14 @@ Usage:
     my_little_ldap.py fromgroup (add | del) <group> <user>
     my_little_ldap.py ls
     my_little_ldap.py (-h | --help)
+
+Options:
+    -h --help   Show this screen.
+    adduser     Adds a new user.
+    passwd      Changes password of a user.
+    rm          Deletes user.
+    fromgroup   Manages group. Not implemented yet.
+    ls          Outputs a list of users
 '''
 import ldap
 import ldap.modlist as modlist
