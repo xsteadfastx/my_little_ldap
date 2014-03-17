@@ -64,16 +64,49 @@ def adduser():
 
 
 def ls():
+    #define variables
     search_scope = ldap.SCOPE_SUBTREE
     retrieve_attributes = ['cn', 'uid']
     search_filter = 'uid=*'
 
+    # connect
     l = ldap.open(LDAP_SERVER)
+
+    # search
     ldap_result_id = l.search(LDAP_BASE, search_scope, search_filter,
                               retrieve_attributes)
 
+    # print result
     for i in l.result(ldap_result_id)[1]:
         print '%s: %s' % (i[1]['uid'][0], i[1]['cn'][0])
+
+
+def passwd():
+    # define variables
+    admin_password = getpass('Admin Password: ')
+    new_password = getpass('New Password for '+arguments['<username>']+': ')
+    search_scope = ldap.SCOPE_SUBTREE
+    retrieve_attributes = ['cn']
+    search_filter = 'uid='+arguments['<username>']
+
+    # connection and bind
+    l = ldap.open(LDAP_SERVER)
+    l.simple_bind_s(LDAP_ADMIN, admin_password)
+
+    # search for full dn
+    ldap_result_id = l.search(LDAP_BASE, search_scope, search_filter,
+                              retrieve_attributes)
+    full_dn = l.result(ldap_result_id)[1][0][0]
+
+    # encode password
+    password = encode_password(new_password)
+
+    # create mod list and modify ldap entry
+    mod_list = ((ldap.MOD_REPLACE, 'userPassword', password),)
+    l.modify(full_dn, mod_list)
+
+    # disconnect
+    l.unbind_s()
 
 
 def main():
@@ -81,6 +114,8 @@ def main():
         adduser()
     elif arguments['ls']:
         ls()
+    elif arguments['passwd']:
+        passwd()
 
 
 if __name__ == '__main__':
