@@ -1,19 +1,19 @@
 '''
 Usage:
-    my_little_ldap.py adduser <username> <first_name> <last_name> <email_address> <password>
-    my_little_ldap.py passwd <username>
-    my_little_ldap.py rm <username>
+    my_little_ldap.py user add <username> <first_name> <last_name> <email_address> <password>
+    my_little_ldap.py user passwd <username>
+    my_little_ldap.py user rm <username>
+    my_little_ldap.py user ls
     my_little_ldap.py fromgroup (add | del) <group> <user>
-    my_little_ldap.py ls
     my_little_ldap.py (-h | --help)
 
 Options:
-    -h --help   Show this screen.
-    adduser     Adds a new user.
-    passwd      Changes password of a user.
-    rm          Deletes user.
-    fromgroup   Manages group. Not implemented yet.
-    ls          Outputs a list of users
+    -h --help           Show this screen.
+    user add            Adds a new user.
+    user passwd         Changes password of a user.
+    user rm             Deletes user.
+    user ls             Outputs a list of users
+    fromgroup           Manages group. Not implemented yet.
 '''
 import ldap
 import ldap.modlist as modlist
@@ -54,7 +54,7 @@ def get_full_dn(username):
     return l.result(ldap_result_id)[1][0][0]
 
 
-def adduser():
+def user_add():
     # get passwort from commandline
     admin_password = getpass('Admin Password: ')
 
@@ -96,7 +96,7 @@ def adduser():
     l.unbind_s()
 
 
-def ls():
+def user_ls():
     #define variables
     search_scope = ldap.SCOPE_SUBTREE
     retrieve_attributes = ['cn', 'uid']
@@ -114,7 +114,7 @@ def ls():
         print '%s: %s' % (i[1]['uid'][0], i[1]['cn'][0])
 
 
-def passwd():
+def user_passwd():
     # define variables
     admin_password = getpass('Admin Password: ')
     new_password = getpass('New Password for '+arguments['<username>']+': ')
@@ -135,7 +135,7 @@ def passwd():
     l.unbind_s()
 
 
-def rm():
+def user_rm():
     # define variables
     admin_password = getpass('Admin Password: ')
     full_dn = get_full_dn(arguments['<username>'])
@@ -157,14 +157,15 @@ def rm():
 
 
 def main():
-    if arguments['adduser']:
-        adduser()
-    elif arguments['ls']:
-        ls()
-    elif arguments['passwd']:
-        passwd()
-    elif arguments['rm']:
-        rm()
+    if arguments['user']:
+        if arguments['add']:
+            user_add()
+        elif arguments['ls']:
+            user_ls()
+        elif arguments['passwd']:
+            user_passwd()
+        elif arguments['rm']:
+            user_rm()
 
 
 if __name__ == '__main__':
