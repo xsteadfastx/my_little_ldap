@@ -1,9 +1,10 @@
 '''
 Usage:
     my_little_ldap.py user add <username> <first_name> <last_name> <email_address> <password>
-    my_little_ldap.py user addto <username> <groupname>
-    my_little_ldap.py user passwd <username>
     my_little_ldap.py user rm <username>
+    my_little_ldap.py user addto <username> <groupname>
+    my_little_ldap.py user rmfrom <username> <groupname>
+    my_little_ldap.py user passwd <username>
     my_little_ldap.py user ls
     my_little_ldap.py group ls
     my_little_ldap.py (-h | --help)
@@ -11,10 +12,12 @@ Usage:
 Options:
     -h --help           Show this screen.
     user add            Adds a new user.
-    user passwd         Changes password of a user.
     user rm             Deletes user.
-    user ls             Outputs a list of users
-    fromgroup           Manages group. Not implemented yet.
+    user addto          Adds user to group.        
+    user rmfrom         Removes user from group.
+    user passwd         Changes password of a user.
+    user ls             List of users.
+    group ls            List of groups and members.
 '''
 import ldap
 import ldap.modlist as modlist
@@ -136,6 +139,28 @@ def user_addto():
     l.unbind_s()
 
 
+def user_rmfrom():
+    ''' removes user from group'''
+    # get passwort from commandline
+    admin_password = getpass('Admin Password: ')
+
+    # get full dn's
+    full_group_dn = get_full_group_dn(arguments['<groupname>'])
+    full_user_dn = get_full_user_dn(arguments['<username>'])
+
+    # connection and bind
+    l = ldap.open(LDAP_SERVER)
+    l.simple_bind_s(LDAP_ADMIN, admin_password)
+
+    # getting attrs together
+    mod_attrs = [(ldap.MOD_DELETE, 'member', full_user_dn)]
+
+    l.modify_s(full_group_dn, mod_attrs)
+
+    # disconnect
+    l.unbind_s()
+
+
 def user_ls():
     #define variables
     search_scope = ldap.SCOPE_SUBTREE
@@ -222,6 +247,8 @@ def main():
             user_add()
         elif arguments['addto']:
             user_addto()
+        elif arguments['rmfrom']:
+            user_rmfrom()
         elif arguments['ls']:
             user_ls()
         elif arguments['passwd']:
