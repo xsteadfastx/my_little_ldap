@@ -6,6 +6,8 @@ Usage:
     my_little_ldap.py user rmfrom <username> <groupname>
     my_little_ldap.py user passwd <username>
     my_little_ldap.py user ls
+    my_little_ldap.py group add <groupname> <username>
+    my_little_ldap.py group rm <groupname>
     my_little_ldap.py group ls
     my_little_ldap.py (-h | --help)
 
@@ -13,10 +15,12 @@ Options:
     -h --help           Show this screen.
     user add            Adds a new user.
     user rm             Deletes user.
-    user addto          Adds user to group.        
+    user addto          Adds user to group.
     user rmfrom         Removes user from group.
     user passwd         Changes password of a user.
     user ls             List of users.
+    group add           Add group.
+    group rm            Delete group.
     group ls            List of groups and members.
 '''
 import ldap
@@ -84,7 +88,7 @@ def user_add():
     l.simple_bind_s(LDAP_ADMIN, admin_password)
 
     # dn of the new user
-    new_user_dn = "cn=%s %s,%s" % (arguments['<first_name>'],
+    new_user_dn = 'cn=%s %s,%s' % (arguments['<first_name>'],
                                    arguments['<last_name>'], LDAP_USER_BASE)
 
     # encode password
@@ -105,6 +109,7 @@ def user_add():
     ldif = modlist.addModlist(attrs)
 
     # print ldif and ask if data is right
+    print '%s%s%s' % ('\033[1m', new_user_dn, '\033[0m')
     for i in ldif:
         print '%s: %s' % (i[0], i[1])
     confirmation = raw_input('confirm y/n: ')
@@ -221,6 +226,40 @@ def user_rm():
     l.unbind_s()
 
 
+def group_add():
+    # get password from commandline
+    admin_password = getpass('Admin Password: ')
+
+    # connection and bind
+    l = ldap.open(LDAP_SERVER)
+    l.simple_bind_s(LDAP_ADMIN, admin_password)
+
+    # dn of the new group
+    new_group_dn = 'cn=%s,%s' % (arguments['<groupname>'], LDAP_GROUP_BASE)
+
+    # getting ldap attributes together
+    attrs = {}
+    attrs['objectClass'] = ['top', 'groupOfNames']
+    attrs['cn'] = arguments['<groupname>']
+    attrs['member'] = get_full_user_dn(arguments['<username>'])
+
+    # create ldif
+    ldif = modlist.addModlist(attrs)
+
+    # confirmation
+    print '%s%s%s' % ('\033[1m', new_group_dn, '\033[0m')
+    for i in ldif:
+        print '%s: %s' % (i[0], i[1])
+    confirmation = raw_input('confirm y/n: ')
+
+    if confirmation == 'y':
+        # add ldif to server
+        l.add_s(new_group_dn, ldif)
+
+    # disconnect
+    l.unbind_s()
+
+
 def group_ls():
     #define variables
     search_scope = ldap.SCOPE_SUBTREE
@@ -258,6 +297,8 @@ def main():
     elif arguments['group']:
         if arguments['ls']:
             group_ls()
+        elif arguments['add']:
+            group_add()
 
 
 if __name__ == '__main__':
