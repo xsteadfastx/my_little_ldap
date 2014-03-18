@@ -1,6 +1,7 @@
 '''
 Usage:
     my_little_ldap.py user add <username> <first_name> <last_name> <email_address> <password>
+    my_little_ldap.py user addto <username> <groupname>
     my_little_ldap.py user passwd <username>
     my_little_ldap.py user rm <username>
     my_little_ldap.py user ls
@@ -38,18 +39,34 @@ def encode_password(password):
     return '{SHA}' + string.strip(encodestring(sha_digest))
 
 
-def get_full_dn(username):
+def get_full_user_dn(username):
     '''get full dn for username'''
     # define variables
     search_scope = ldap.SCOPE_SUBTREE
     retrieve_attributes = ['cn']
-    search_filter = 'uid='+username
+    search_filter = 'uid=' + username
 
     # connection and bind
     l = ldap.open(LDAP_SERVER)
 
     # search for full dn
     ldap_result_id = l.search(LDAP_USER_BASE, search_scope, search_filter,
+                              retrieve_attributes)
+
+    return l.result(ldap_result_id)[1][0][0]
+
+
+def get_full_group_dn(group):
+    #define variables
+    search_scope = ldap.SCOPE_SUBTREE
+    retrieve_attributes = ['cn']
+    search_filter = 'cn=' + group
+
+    # connect
+    l = ldap.open(LDAP_SERVER)
+
+    # search for full dn
+    ldap_result_id = l.search(LDAP_GROUP_BASE, search_scope, search_filter,
                               retrieve_attributes)
 
     return l.result(ldap_result_id)[1][0][0]
@@ -97,6 +114,28 @@ def user_add():
     l.unbind_s()
 
 
+def user_addto():
+    ''' adds user to group'''
+    # get passwort from commandline
+    admin_password = getpass('Admin Password: ')
+
+    # get full dn's
+    full_group_dn = get_full_group_dn(arguments['<groupname>'])
+    full_user_dn = get_full_user_dn(arguments['<username>'])
+
+    # connection and bind
+    l = ldap.open(LDAP_SERVER)
+    l.simple_bind_s(LDAP_ADMIN, admin_password)
+
+    # getting attrs together
+    mod_attrs = [(ldap.MOD_ADD, 'member', full_user_dn)]
+
+    l.modify_s(full_group_dn, mod_attrs)
+
+    # disconnect
+    l.unbind_s()
+
+
 def user_ls():
     #define variables
     search_scope = ldap.SCOPE_SUBTREE
@@ -112,14 +151,14 @@ def user_ls():
 
     # print result
     for i in l.result(ldap_result_id)[1]:
-        print '%s: %s' % (i[1]['uid'][0], i[1]['cn'][0])
+        print '%s%s%s: %s' % ('\033[1m', i[1]['uid'][0], '\033[0m', i[1]['cn'][0])
 
 
 def user_passwd():
     # define variables
     admin_password = getpass('Admin Password: ')
     new_password = getpass('New Password for '+arguments['<username>']+': ')
-    full_dn = get_full_dn(arguments['<username>'])
+    full_dn = get_full_user_dn(arguments['<username>'])
 
     # connection and bind
     l = ldap.open(LDAP_SERVER)
@@ -139,7 +178,7 @@ def user_passwd():
 def user_rm():
     # define variables
     admin_password = getpass('Admin Password: ')
-    full_dn = get_full_dn(arguments['<username>'])
+    full_dn = get_full_user_dn(arguments['<username>'])
 
     #connection and bind
     l = ldap.open(LDAP_SERVER)
@@ -181,6 +220,8 @@ def main():
     if arguments['user']:
         if arguments['add']:
             user_add()
+        elif arguments['addto']:
+            user_addto()
         elif arguments['ls']:
             user_ls()
         elif arguments['passwd']:
