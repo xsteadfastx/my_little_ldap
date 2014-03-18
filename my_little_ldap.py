@@ -260,6 +260,27 @@ def group_add():
     l.unbind_s()
 
 
+def group_rm():
+    # definde variables
+    admin_password = getpass('Admin Password: ')
+    full_dn = get_full_group_dn(arguments['<groupname>'])
+
+    # connection and bind
+    l = ldap.open(LDAP_SERVER)
+    l.simple_bind_s(LDAP_ADMIN, admin_password)
+
+    # confirmation
+    print 'you are going to delete group: %s' % (arguments['<groupname>'])
+    confirmation = raw_input('confirm y/n: ')
+
+    if confirmation == 'y':
+        # delete
+        l.delete_s(full_dn)
+
+    # disconnect
+    l.unbind_s()
+
+
 def group_ls():
     #define variables
     search_scope = ldap.SCOPE_SUBTREE
@@ -299,6 +320,8 @@ def main():
             group_ls()
         elif arguments['add']:
             group_add()
+        elif arguments['rm']:
+            group_rm()
 
 
 if __name__ == '__main__':
