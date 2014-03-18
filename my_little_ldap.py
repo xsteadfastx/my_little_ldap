@@ -4,7 +4,7 @@ Usage:
     my_little_ldap.py user passwd <username>
     my_little_ldap.py user rm <username>
     my_little_ldap.py user ls
-    my_little_ldap.py fromgroup (add | del) <group> <user>
+    my_little_ldap.py group ls
     my_little_ldap.py (-h | --help)
 
 Options:
@@ -27,7 +27,8 @@ from getpass import getpass
 arguments = docopt(__doc__)
 
 LDAP_SERVER = 'localhost'
-LDAP_BASE = 'ou=user,dc=ecclesianuernberg,dc=de'
+LDAP_USER_BASE = 'ou=user,dc=ecclesianuernberg,dc=de'
+LDAP_GROUP_BASE = 'ou=groups,dc=ecclesianuernberg,dc=de'
 LDAP_ADMIN = 'cn=admin,dc=ecclesianuernberg,dc=de'
 
 
@@ -48,7 +49,7 @@ def get_full_dn(username):
     l = ldap.open(LDAP_SERVER)
 
     # search for full dn
-    ldap_result_id = l.search(LDAP_BASE, search_scope, search_filter,
+    ldap_result_id = l.search(LDAP_USER_BASE, search_scope, search_filter,
                               retrieve_attributes)
 
     return l.result(ldap_result_id)[1][0][0]
@@ -64,7 +65,7 @@ def user_add():
 
     # dn of the new user
     new_user_dn = "cn=%s %s,%s" % (arguments['<first_name>'],
-                                   arguments['<last_name>'], LDAP_BASE)
+                                   arguments['<last_name>'], LDAP_USER_BASE)
 
     # encode password
     password = encode_password(arguments['<password>'])
@@ -106,7 +107,7 @@ def user_ls():
     l = ldap.open(LDAP_SERVER)
 
     # search
-    ldap_result_id = l.search(LDAP_BASE, search_scope, search_filter,
+    ldap_result_id = l.search(LDAP_USER_BASE, search_scope, search_filter,
                               retrieve_attributes)
 
     # print result
@@ -156,6 +157,26 @@ def user_rm():
     l.unbind_s()
 
 
+def group_ls():
+    #define variables
+    search_scope = ldap.SCOPE_SUBTREE
+    retrieve_attributes = ['cn', 'member']
+    search_filter = 'objectClass=groupOfNames'
+
+    # connect
+    l = ldap.open(LDAP_SERVER)
+
+    # search
+    ldap_result_id = l.search(LDAP_GROUP_BASE, search_scope, search_filter,
+                              retrieve_attributes)
+
+    # print result
+    for i in l.result(ldap_result_id)[1]:
+        print '\033[1m' + i[1]['cn'][0] + '\033[0m'
+        for j in i[1]['member']:
+            print '- ' + j
+
+
 def main():
     if arguments['user']:
         if arguments['add']:
@@ -166,6 +187,9 @@ def main():
             user_passwd()
         elif arguments['rm']:
             user_rm()
+    elif arguments['group']:
+        if arguments['ls']:
+            group_ls()
 
 
 if __name__ == '__main__':
