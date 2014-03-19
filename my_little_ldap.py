@@ -40,6 +40,11 @@ LDAP_GROUP_BASE = 'ou=groups,dc=ecclesianuernberg,dc=de'
 LDAP_ADMIN = 'cn=admin,dc=ecclesianuernberg,dc=de'
 
 
+def bold(word):
+    '''returns bold string'''
+    return '\033[1m' + word + '\033[0m'
+
+
 def encode_password(password):
     '''encode password to sha'''
     sha_digest = sha.new(password).digest()
@@ -109,7 +114,7 @@ def user_add():
     ldif = modlist.addModlist(attrs)
 
     # print ldif and ask if data is right
-    print '%s%s%s' % ('\033[1m', new_user_dn, '\033[0m')
+    print bold(new_user_dn)
     for i in ldif:
         print '%s: %s' % (i[0], i[1])
     confirmation = raw_input('confirm y/n: ')
@@ -181,7 +186,7 @@ def user_ls():
 
     # print result
     for i in l.result(ldap_result_id)[1]:
-        print '%s%s%s: %s' % ('\033[1m', i[1]['uid'][0], '\033[0m', i[1]['cn'][0])
+        print '%s: %s' % (bold(i[1]['uid'][0]), i[1]['cn'][0])
 
 
 def user_passwd():
@@ -247,7 +252,7 @@ def group_add():
     ldif = modlist.addModlist(attrs)
 
     # confirmation
-    print '%s%s%s' % ('\033[1m', new_group_dn, '\033[0m')
+    print bold(new_group_dn)
     for i in ldif:
         print '%s: %s' % (i[0], i[1])
     confirmation = raw_input('confirm y/n: ')
@@ -296,7 +301,7 @@ def group_ls():
 
     # print result
     for i in l.result(ldap_result_id)[1]:
-        print '\033[1m' + i[1]['cn'][0] + '\033[0m'
+        print bold(i[1]['cn'][0])
         for j in i[1]['member']:
             print '- ' + j
 
